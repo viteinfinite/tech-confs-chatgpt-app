@@ -10,6 +10,7 @@ A ChatGPT app that presents an interactive, horizontally scrolling card-based in
 - **Talk detail retrieval** - Click cards to get full abstract via follow-up message
 - **Responsive design** - Adapts to ChatGPT display modes (inline/fullscreen)
 - **Accessibility support** - Proper ARIA labels, keyboard navigation
+- **Widget rendering** - MCP resources expose a widget template for ChatGPT UI rendering
 
 ## Architecture
 
@@ -21,6 +22,9 @@ A ChatGPT app that presents an interactive, horizontally scrolling card-based in
        │                    │
        ▼                    ▼
   Follow-up          schedule.json
+       │
+       ▼
+  Widget template (ui://widget/conference-schedule.html)
   (for details)
 ```
 
@@ -81,7 +85,7 @@ The MCP server listens on `PORT` (default `2091`) and exposes Streamable HTTP en
 3. For auto-restarts on server changes, run `npm run dev:mcp` in a separate terminal while `npm run dev` handles rebuilds.
 
 Notes on caching:
-- The UI bundle is embedded as a `data:` URI in tool responses, so there are no separate static asset URLs to cache.
+- The UI is served as a widget resource template (`ui://widget/conference-schedule.html`) backed by the bundled component.
 - ChatGPT/Inspector may cache connector metadata or tool responses; if changes don’t appear, refresh the connector or restart the MCP server.
 
 ## MCP Server Endpoints
@@ -94,6 +98,7 @@ Notes on caching:
 ### `search_talks`
 
 Search and filter conference talks. Returns talks grouped by category with a card-based UI.
+The widget renders within a fixed 400px height and uses horizontal scrolling rows for navigation.
 
 **Parameters:**
 - `category` (optional): Filter by category (e.g., "AI & Machine Learning", "SwiftUI & Design")
