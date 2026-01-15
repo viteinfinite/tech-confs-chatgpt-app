@@ -9,7 +9,7 @@
     "dev": "tsc --watch",
     "dev:server": "nodemon --watch dist --exec node dist/server.js",
     "start": "node dist/server.js",
-    "test": "npm run build && node --test dist/__tests__/streamable-http.test.js"
+    "test": "npm run build && node --test dist/__tests__/*.test.js"
   },
   "keywords": [
     "mcp",

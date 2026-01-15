@@ -20,6 +20,9 @@ body {
   max-width: 100%;
   padding: 16px;
   overflow-x: hidden;
+  height: 400px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .app-header {

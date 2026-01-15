@@ -11,7 +11,13 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+  type Resource,
+  type ResourceTemplate,
+  type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { readFile } from "fs/promises";
 import {
@@ -26,6 +32,47 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const MAX_POST_MESSAGE_BYTES = 4 * 1024 * 1024;
+const MAX_LOG_BODY_CHARS = 4000;
+
+function safeParseJson(text: string): unknown | undefined {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+function formatBodyPreview(text: string) {
+  if (text.length <= MAX_LOG_BODY_CHARS) {
+    return { preview: text, truncated: false };
+  }
+  return {
+    preview: `${text.slice(0, MAX_LOG_BODY_CHARS)}...[truncated]`,
+    truncated: true,
+  };
+}
+
+async function readRequestBody(req: IncomingMessage): Promise<Buffer> {
+  return await new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+
+    req.on("data", (chunk) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buffer.length;
+      if (total > MAX_POST_MESSAGE_BYTES) {
+        reject(new Error("Request body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(buffer);
+    });
+
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", (error) => reject(error));
+  });
+}
 
 /**
  * Tool output schema for search_talks
@@ -37,89 +84,123 @@ interface SearchTalksOutput {
   filterSummary: string;
 }
 
-/**
- * Create MCP server instance
- */
-function createScheduleServer(): Server {
-  const server = new Server(
-    {
-      name: "conference-schedule-server",
-      version: "1.0.0",
-    },
-    {
-      capabilities: {
-        tools: {},
-      },
-    }
-  );
+type WidgetDef = {
+  id: string;
+  title: string;
+  templateUri: string;
+  invoking: string;
+  invoked: string;
+  responseText: string;
+};
 
-  /**
-   * List available tools
-   */
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return {
-      tools: [
-        {
-          name: "search_talks",
+export const WIDGET_TEMPLATE_URI = "ui://widget/conference-schedule.html";
+
+function widgetMeta(widget: WidgetDef) {
+  return {
+    "openai/outputTemplate": widget.templateUri,
+    "openai/toolInvocation/invoking": widget.invoking,
+    "openai/toolInvocation/invoked": widget.invoked,
+    "openai/widgetAccessible": true,
+    "openai/resultCanProduceWidget": true,
+  } as const;
+}
+
+const scheduleWidget: WidgetDef = {
+  id: "conference-schedule",
+  title: "Conference Schedule",
+  templateUri: WIDGET_TEMPLATE_URI,
+  invoking: "Searching conference schedule",
+  invoked: "Showing schedule results",
+  responseText: "Rendered conference schedule results.",
+};
+
+export function getScheduleWidgetMeta() {
+  return widgetMeta(scheduleWidget);
+}
+
+const tools: Tool[] = [
+  {
+    name: "search_talks",
+    title: "Search talks",
+    description:
+      "Search and filter conference talks. Returns talks grouped by category with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
           description:
-            "Search and filter conference talks. Returns talks grouped by category with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              category: {
-                type: "string",
-                description:
-                  "Filter by category (e.g., 'AI & Machine Learning', 'SwiftUI & Design', 'Testing')",
-                enum: [
-                  "AI & Machine Learning",
-                  "SwiftUI & Design",
-                  "Concurrency & Performance",
-                  "Testing",
-                  "Platform & Tools",
-                  "Live Activities & Widgets",
-                  "Accessibility",
-                  "Vision & Spatial",
-                  "Cross-Platform",
-                  "Voice & Speech",
-                  "Error Handling",
-                  "Analytics",
-                  "General",
-                ],
-              },
-              day: {
-                type: "string",
-                description: "Filter by day (e.g., 'Oct 6', 'Oct 7')",
-              },
-              speaker: {
-                type: "string",
-                description: "Filter by speaker name (partial match)",
-              },
-              keywords: {
-                type: "array",
-                items: { type: "string" },
-                description: "Filter by keywords in title or speakers",
-              },
-            },
-          },
+            "Filter by category (e.g., 'AI & Machine Learning', 'SwiftUI & Design', 'Testing')",
+          enum: [
+            "AI & Machine Learning",
+            "SwiftUI & Design",
+            "Concurrency & Performance",
+            "Testing",
+            "Platform & Tools",
+            "Live Activities & Widgets",
+            "Accessibility",
+            "Vision & Spatial",
+            "Cross-Platform",
+            "Voice & Speech",
+            "Error Handling",
+            "Analytics",
+            "General",
+          ],
         },
-        {
-          name: "get_talk_details",
-          description:
-            "Get detailed information about a specific talk including the full abstract. Use this when users click on a talk card or request more details about a specific session.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              talk_id: {
-                type: "string",
-                description: "The unique ID of the talk",
-              },
-            },
-            required: ["talk_id"],
-          },
+        day: {
+          type: "string",
+          description: "Filter by day (e.g., 'Oct 6', 'Oct 7')",
         },
-      ],
-    };
-  });
+        speaker: {
+          type: "string",
+          description: "Filter by speaker name (partial match)",
+        },
+        keywords: {
+          type: "array",
+          items: { type: "string" },
+          description: "Filter by keywords in title or speakers",
+        },
+      },
+    },
+    _meta: widgetMeta(scheduleWidget),
+  },
+  {
+    name: "get_talk_details",
+    title: "Get talk details",
+    description:
+      "Get detailed information about a specific talk including the full abstract. Use this when users click on a talk card or request more details about a specific session.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        talk_id: {
+          type: "string",
+          description: "The unique ID of the talk",
+        },
+      },
+      required: ["talk_id"],
+    },
+  },
+];
+
+const resources: Resource[] = [
+  {
+    uri: WIDGET_TEMPLATE_URI,
+    name: scheduleWidget.title,
+    description: `${scheduleWidget.title} widget markup`,
+    mimeType: "text/html+skybridge",
+    _meta: widgetMeta(scheduleWidget),
+  },
+];
+
+const resourceTemplates: ResourceTemplate[] = [
+  {
+    uriTemplate: WIDGET_TEMPLATE_URI,
+    name: scheduleWidget.title,
+    description: `${scheduleWidget.title} widget markup`,
+    mimeType: "text/html+skybridge",
+    _meta: widgetMeta(scheduleWidget),
+  },
+];
 
 /**
  * Load and embed the React component bundle
@@ -133,6 +214,79 @@ async function getComponentBundle(): Promise<string> {
     return "";
   }
 }
+
+export async function buildWidgetHtml(): Promise<string> {
+  const componentJs = await getComponentBundle();
+  if (!componentJs) {
+    throw new Error(
+      "Widget component bundle is missing. Run the web build to generate web/dist/component.js."
+    );
+  }
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conference Schedule</title>
+  </head>
+  <body>
+    <div id="conference-schedule-root"></div>
+    <script type="module">${componentJs}</script>
+  </body>
+</html>`;
+}
+
+/**
+ * Create MCP server instance
+ */
+export function createScheduleServer(): Server {
+  const server = new Server(
+    {
+      name: "conference-schedule-server",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {
+        tools: {},
+        resources: {},
+      },
+    }
+  );
+
+  /**
+   * List available tools
+   */
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+      tools,
+    };
+  });
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return { resources };
+  });
+
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+    return { resourceTemplates };
+  });
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const uri = request.params.uri;
+    if (uri !== WIDGET_TEMPLATE_URI) {
+      throw new Error(`Unknown resource: ${uri}`);
+    }
+    const html = await buildWidgetHtml();
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "text/html+skybridge",
+          text: html,
+        },
+      ],
+    };
+  });
 
   /**
    * Handle tool calls
@@ -164,26 +318,17 @@ async function getComponentBundle(): Promise<string> {
           filterSummary: buildFilterSummary(filters, filteredTalks.length),
         };
 
-        // Get component bundle for UI
-        const componentJs = await getComponentBundle();
-
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(output, null, 2),
+              text: `Found ${output.totalCount} talk${
+                output.totalCount === 1 ? "" : "s"
+              }`,
             },
-            ...(componentJs
-              ? [
-                  {
-                    type: "resource",
-                    uri:
-                      "data:text/javascript;base64," +
-                      Buffer.from(componentJs).toString("base64"),
-                  } as const,
-                ]
-              : []),
           ],
+          structuredContent: output,
+          _meta: widgetMeta(scheduleWidget),
         };
       }
 
@@ -318,7 +463,7 @@ export function createHttpServer() {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "content-type");
     const sessionId = url.searchParams.get("sessionId");
-    console.log("POST /mcp/messages", { sessionId });
+    console.log("POST message request", { path: url.pathname, sessionId });
 
     if (!sessionId) {
       res.writeHead(400).end("Missing sessionId query parameter");
@@ -331,8 +476,32 @@ export function createHttpServer() {
       return;
     }
 
+    let bodyBuffer: Buffer;
     try {
-      await session.transport.handlePostMessage(req, res);
+      bodyBuffer = await readRequestBody(req);
+    } catch (error) {
+      console.error("Failed to read POST body", error);
+      if (!res.headersSent) {
+        res.writeHead(400).end("Failed to read request body");
+      }
+      return;
+    }
+
+    const rawBody = bodyBuffer.toString("utf8");
+    const parsedBody = safeParseJson(rawBody);
+    const { preview, truncated } = formatBodyPreview(rawBody);
+    console.log("POST message body", {
+      path: url.pathname,
+      sessionId,
+      contentType: req.headers["content-type"],
+      contentLength: req.headers["content-length"],
+      size: bodyBuffer.length,
+      truncated,
+      body: parsedBody ?? preview,
+    });
+
+    try {
+      await session.transport.handlePostMessage(req, res, parsedBody ?? rawBody);
     } catch (error) {
       console.error("Failed to process message", error);
       if (!res.headersSent) {
@@ -377,7 +546,10 @@ export function createHttpServer() {
         return;
       }
 
-      if (req.method === "POST" && url.pathname === postPath) {
+      if (
+        req.method === "POST" &&
+        (url.pathname === postPath || url.pathname === ssePath)
+      ) {
         await handlePostMessage(req, res, url);
         return;
       }
@@ -407,7 +579,7 @@ async function main() {
     console.log(`Conference Schedule MCP server listening on http://localhost:${port}`);
     console.log(`  SSE stream: GET http://localhost:${port}${ssePath}`);
     console.log(
-      `  Message post endpoint: POST http://localhost:${port}${postPath}?sessionId=...`
+      `  Message post endpoints: POST http://localhost:${port}${postPath}?sessionId=... or http://localhost:${port}${ssePath}?sessionId=...`
     );
   });
 }
