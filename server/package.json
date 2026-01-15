@@ -1,0 +1,30 @@
+{
+  "name": "conference-schedule-server",
+  "version": "1.0.0",
+  "description": "MCP server for conference schedule ChatGPT app",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "dev:server": "nodemon --watch dist --exec node dist/server.js",
+    "start": "node dist/server.js",
+    "test": "npm run build && node --test dist/__tests__/streamable-http.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "chatgpt",
+    "conference",
+    "schedule"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "nodemon": "^3.1.11",
+    "typescript": "^5.7.2"
+  }
+}

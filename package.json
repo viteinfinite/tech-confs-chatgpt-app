@@ -1,0 +1,25 @@
+{
+  "name": "conference-schedule-chatgpt-app",
+  "version": "1.0.0",
+  "description": "ChatGPT app for browsing conference talks with a card-based interface",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:server && npm run build:web",
+    "build:server": "cd server && npm run build",
+    "build:web": "cd web && npm run build",
+    "dev": "npm run dev:server & npm run dev:web",
+    "dev:server": "cd server && npm run dev",
+    "dev:mcp": "cd server && npm run dev:server",
+    "dev:web": "cd web && npm run dev",
+    "start": "cd server && npm start",
+    "test": "npm run test:server",
+    "test:server": "cd server && npm test"
+  },
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "keywords": ["chatgpt", "mcp", "conference", "schedule"],
+  "author": "",
+  "license": "MIT"
+}

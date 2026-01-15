@@ -1,0 +1,23 @@
+{
+  "name": "conference-schedule-web",
+  "version": "1.0.0",
+  "description": "React component for conference schedule ChatGPT app",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/component.tsx --bundle --format=esm --outfile=dist/component.js --loader:.css=css --minify",
+    "dev": "esbuild src/component.tsx --bundle --format=esm --outfile=dist/component.js --loader:.css=css --watch"
+  },
+  "keywords": ["react", "chatgpt", "conference"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.2"
+  }
+}
