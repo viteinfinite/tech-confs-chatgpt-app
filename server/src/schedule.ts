@@ -1,6 +1,9 @@
 import { readFile } from "fs/promises";
-import { join } from "path";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { categorizeTalk } from "./categorize.js";
+
+const ROOT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /**
  * Raw talk structure from schedule.json
@@ -58,7 +61,7 @@ function formatDay(fromTime: string): string {
  * Load and parse schedule.json
  */
 export async function loadSchedule(): Promise<RawTalk[]> {
-  const schedulePath = join(process.cwd(), "schedule.json");
+  const schedulePath = join(ROOT_DIR, "schedule.json");
   const content = await readFile(schedulePath, "utf-8");
   return JSON.parse(content);
 }
