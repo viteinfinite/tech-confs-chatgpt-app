@@ -23,7 +23,7 @@ test("schedule widget styles enforce fixed height and horizontal scrolling", asy
     "..",
     "web",
     "src",
-    "component.tsx"
+    "app.tsx"
   );
   const componentSource = await readFile(componentPath, "utf-8");
 

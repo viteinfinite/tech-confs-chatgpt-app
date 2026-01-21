@@ -29,7 +29,7 @@ function closeServer(server: ReturnType<typeof createHttpServer>): Promise<void>
   });
 }
 
-test("GET /mcp opens SSE and POST /mcp/messages accepts requests", async (t) => {
+test("GET /mcp opens SSE and POST endpoints accept requests", async (t) => {
   const httpServer = createHttpServer();
   t.after(() => closeServer(httpServer));
 
@@ -107,5 +107,35 @@ test("GET /mcp opens SSE and POST /mcp/messages accepts requests", async (t) => 
   });
 
   assert.equal(postStatus, 202);
+
+  const postSsePathStatus = await new Promise<number>((resolve, reject) => {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/list",
+      params: {},
+    });
+    const req = request(
+      {
+        host: "127.0.0.1",
+        port,
+        path: `/mcp?sessionId=${encodeURIComponent(sessionId)}`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode ?? 0);
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+
+  assert.equal(postSsePathStatus, 202);
   close();
 });
