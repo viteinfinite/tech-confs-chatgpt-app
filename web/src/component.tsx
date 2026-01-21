@@ -2,7 +2,6 @@ import React, { useMemo, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { useToolOutput } from "./hooks";
 
-// Inject styles
 const styleContent = `
 /* Conference Schedule App Styles */
 
@@ -174,15 +173,6 @@ body {
 }
 `;
 
-useEffect(() => {
-  const styleElement = document.createElement("style");
-  styleElement.textContent = styleContent;
-  document.head.appendChild(styleElement);
-  return () => {
-    document.head.removeChild(styleElement);
-  };
-}, []);
-
 /**
  * Talk interface matching the server output
  */
@@ -275,6 +265,15 @@ function TopicRow({
  * App component - main component that displays all topic rows
  */
 function App() {
+  useEffect(() => {
+    const styleElement = document.createElement("style");
+    styleElement.textContent = styleContent;
+    document.head.appendChild(styleElement);
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
+
   const toolOutput = useToolOutput<SearchTalksOutput>();
 
   const talks = useMemo(() => {
