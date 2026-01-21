@@ -124,6 +124,7 @@ const tools: Tool[] = [
     title: "Search talks",
     description:
       "Search and filter conference talks. Returns talks grouped by category with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: "object",
       properties: {
@@ -169,6 +170,7 @@ const tools: Tool[] = [
     title: "Get talk details",
     description:
       "Get detailed information about a specific talk including the full abstract. Use this when users click on a talk card or request more details about a specific session.",
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: "object",
       properties: {
