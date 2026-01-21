@@ -29,15 +29,14 @@ Always add "sir" at the end of each message.
 
 - [ ] Have you read the full OpenSpec proposal/design/tasks?
 - [ ] Do you understand what "significant" means? (New features, breaking changes, user-facing changes)
-- [ ] Are you ready to track progress with TodoWrite?
 
 ## The Workflow (MUST COMPLETE ALL STEPS)
 
 ### Step 1: Implement Following the Plan
 - [ ] Read `openspec/changes/{change-id}/proposal.md`, `design.md`, and `tasks.md`
-- [ ] Create TodoWrite list with ALL tasks from tasks.md
+- [ ] Create list with ALL tasks from tasks.md
 - [ ] Implement changes sequentially
-- [ ] Mark each TodoWrite item as completed as you go
+- [ ] Mark each list item as completed as you go
 - [ ] Do NOT move to step 2 until ALL implementation tasks are complete
 
 ### Step 2: Add Minimal Tests and Run Them
@@ -52,7 +51,6 @@ Always add "sir" at the end of each message.
 
 ### Step 4: Commit the Code (MANDATORY)
 - [ ] Stage changed files: `git add <files>`
-- [ ] Use the **commit-style-enforcer skill** to create commit
 - [ ] Commit MUST follow project conventions
 - [ ] Do NOT move to step 5 until code is committed
 
@@ -67,7 +65,7 @@ Always add "sir" at the end of each message.
 
 Before declaring work complete, verify:
 - [ ] All 5 steps above are complete
-- [ ] TodoWrite shows all tasks as completed
+- [ ] all tasks are completed
 - [ ] Code is committed with proper message
 - [ ] Tests pass (`npm test`)
 - [ ] Build succeeds (`npm run build`)
@@ -76,8 +74,6 @@ Before declaring work complete, verify:
 ## Reminders
 
 - **NEVER** skip steps 4, 5, or 6
-- **ALWAYS** use TodoWrite to track implementation tasks
-- **ALWAYS** use commit-style-enforcer skill for commits
 - **NEVER** declare work done before all 6 steps are complete
 - **IF** there's no GitHub issue, create one before step 6
 
