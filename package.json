@@ -11,13 +11,15 @@
     "dev:server": "cd server && npm run dev",
     "dev:mcp": "cd server && npm run dev:server",
     "dev:web": "cd web && npm run dev",
+    "preview": "cd preview && npm run dev",
     "start": "cd server && npm start",
     "test": "npm run test:server",
     "test:server": "cd server && npm test"
   },
   "workspaces": [
     "server",
-    "web"
+    "web",
+    "preview"
   ],
   "keywords": ["chatgpt", "mcp", "conference", "schedule"],
   "author": "",
