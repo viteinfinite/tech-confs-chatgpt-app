@@ -344,5 +344,3 @@ function App() {
 // Mount the app
 const root = createRoot(document.getElementById("conference-schedule-root")!);
 root.render(<App />);
-
-export default App;
