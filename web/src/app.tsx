@@ -1,6 +1,8 @@
 import React, { useMemo, useEffect } from "react";
 import { useToolOutput } from "./hooks";
 
+const STYLE_ELEMENT_ID = "conference-schedule-styles";
+
 const styleContent = `
 /* Conference Schedule App Styles */
 
@@ -195,6 +197,21 @@ export interface SearchTalksOutput {
   filterSummary: string;
 }
 
+export function ensureAppStyles() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  if (document.getElementById(STYLE_ELEMENT_ID)) {
+    return;
+  }
+
+  const styleElement = document.createElement("style");
+  styleElement.id = STYLE_ELEMENT_ID;
+  styleElement.textContent = styleContent;
+  document.head.appendChild(styleElement);
+}
+
 /**
  * TalkCard component - displays a single talk as a card
  */
@@ -271,12 +288,7 @@ export function TopicRow({
  */
 export function App() {
   useEffect(() => {
-    const styleElement = document.createElement("style");
-    styleElement.textContent = styleContent;
-    document.head.appendChild(styleElement);
-    return () => {
-      document.head.removeChild(styleElement);
-    };
+    ensureAppStyles();
   }, []);
 
   const toolOutput = useToolOutput<SearchTalksOutput>();

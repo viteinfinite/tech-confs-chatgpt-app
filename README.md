@@ -48,6 +48,11 @@ schedule-chatgptapp/
 │   ├── dist/
 │   │   └── component.js       # Bundled output
 │   └── package.json
+├── preview/                   # Dev-only component preview app
+│   ├── src/
+│   │   └── index.tsx           # Preview entrypoint
+│   ├── index.html              # Preview shell
+│   └── package.json
 └── package.json               # Root workspace config
 ```
 
@@ -83,6 +88,13 @@ The MCP server listens on `PORT` (default `2091`) and exposes Streamable HTTP en
 1. Build the frontend bundle so `web/dist/component.js` is available (`npm run build`), or run `npm run dev` to watch and rebuild it.
 2. Start the MCP server (`npm start`) to serve `GET /mcp` (SSE) and `POST /mcp/messages`.
 3. For auto-restarts on server changes, run `npm run dev:mcp` in a separate terminal while `npm run dev` handles rebuilds.
+
+Preview UI (development-only):
+```bash
+npm run preview
+```
+- Runs a local preview app at `http://127.0.0.1:5173` with component switching.
+- Autoreloads when preview source files change.
 
 Notes on caching:
 - The UI is served as a widget resource template (`ui://widget/conference-schedule.html`) backed by the bundled component.

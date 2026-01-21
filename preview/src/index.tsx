@@ -1,8 +1,149 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { App, TalkCard, TopicRow, type Talk, type SearchTalksOutput } from "../../web/src/app";
+import {
+  App,
+  TalkCard,
+  TopicRow,
+  ensureAppStyles,
+  type Talk,
+  type SearchTalksOutput,
+} from "../../web/src/app";
 import type { DisplayMode } from "../../web/src/hooks";
-import "./preview.css";
+
+const PREVIEW_STYLE_ELEMENT_ID = "preview-app-styles";
+const previewStyleContent = `
+:root {
+  color-scheme: light;
+  font-family: "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: radial-gradient(circle at top left, #f5f7ff, #ffffff 55%, #eef4ff 100%);
+  color: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#preview-root {
+  min-height: 100vh;
+}
+
+.preview-shell {
+  padding: 32px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.preview-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.preview-header h1 {
+  font-size: 24px;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+}
+
+.preview-header p {
+  margin: 0;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.preview-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+.preview-select select {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  background: #ffffff;
+  font-size: 14px;
+}
+
+.preview-panel {
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+@media (min-width: 768px) {
+  .preview-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background: radial-gradient(circle at top left, #1a1a2e, #0f0f1a 55%, #1a1a2e 100%);
+    color: #e2e8f0;
+  }
+
+  .preview-header {
+    background: rgba(30, 30, 45, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .preview-header h1 {
+    color: #f1f5f9;
+  }
+
+  .preview-header p {
+    color: rgba(226, 232, 240, 0.6);
+  }
+
+  .preview-select {
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  .preview-select select {
+    background: #1e1e2d;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
+  }
+
+  .preview-panel {
+    background: #1e1e2d;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+`;
+
+function ensurePreviewStyles() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  if (document.getElementById(PREVIEW_STYLE_ELEMENT_ID)) {
+    return;
+  }
+
+  const styleElement = document.createElement("style");
+  styleElement.id = PREVIEW_STYLE_ELEMENT_ID;
+  styleElement.textContent = previewStyleContent;
+  document.head.appendChild(styleElement);
+}
 
 type PreviewComponent = "app" | "talk-card" | "topic-row";
 
@@ -95,6 +236,8 @@ function PreviewApp() {
   const [selected, setSelected] = useState<PreviewComponent>("app");
 
   useEffect(() => {
+    ensureAppStyles();
+    ensurePreviewStyles();
     if (selected === "app") {
       setOpenAiGlobals({ toolOutput: mockOutput });
     }
