@@ -23,12 +23,14 @@
     "@modelcontextprotocol/sdk": "^1.24.3",
     "express": "^4.21.2",
     "skybridge": "catalog:",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "inspector": "mcp-inspector http://localhost:3000/mcp"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.2",
     "nodemon": "^3.1.11",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@modelcontextprotocol/inspector": "^0.17.5"
   }
 }
