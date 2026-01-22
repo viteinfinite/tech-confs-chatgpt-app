@@ -4,7 +4,7 @@
   "description": "ChatGPT app for browsing conference talks with a card-based interface",
   "private": true,
   "scripts": {
-    "build": "npm run build:server && npm run build:web",
+    "build": "npm run build:server && npm run build:web && ls web/dist/",
     "build:server": "cd server && npm run build",
     "build:web": "cd web && npm run build",
     "dev": "npm run dev:server & npm run dev:web",
