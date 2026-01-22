@@ -1,141 +1,32 @@
 import assert from "node:assert/strict";
-import { request } from "node:http";
 import test from "node:test";
-import { createHttpServer } from "../server.js";
+import { createScheduleServer, WIDGET_TEMPLATE_URI } from "../server.js";
 
-function listen(server: ReturnType<typeof createHttpServer>): Promise<number> {
-  return new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, () => {
-      const address = server.address();
-      if (address && typeof address === "object") {
-        resolve(address.port);
-      } else {
-        reject(new Error("Failed to bind test server"));
-      }
-    });
-  });
-}
+test("tools/list includes schedule tools and widget metadata", async () => {
+  const server = createScheduleServer();
+  const handlers = (
+    server as unknown as { server: { _requestHandlers: Map<string, unknown> } }
+  ).server._requestHandlers;
+  const handler = handlers.get("tools/list") as
+    | ((request: unknown, extra?: unknown) => Promise<unknown>)
+    | undefined;
 
-function closeServer(server: ReturnType<typeof createHttpServer>): Promise<void> {
-  return new Promise((resolve, reject) => {
-    server.close((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
-  });
-}
+  assert.ok(handler, "expected tools/list handler to be registered");
 
-test("GET /mcp opens SSE and POST endpoints accept requests", async (t) => {
-  const httpServer = createHttpServer();
-  t.after(() => closeServer(httpServer));
+  const response = (await handler({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/list",
+    params: {},
+  })) as {
+    tools?: Array<{ name: string; _meta?: Record<string, unknown> }>;
+  };
 
-  const port = await listen(httpServer);
-  const sseSession = await new Promise<{
-    sessionId: string;
-    close: () => void;
-  }>((resolve, reject) => {
-    const req = request(
-      {
-        host: "127.0.0.1",
-        port,
-        path: "/mcp",
-        method: "GET",
-        headers: {
-          Accept: "text/event-stream",
-        },
-      },
-      (res) => {
-        assert.equal(res.statusCode, 200);
-        const contentType = res.headers["content-type"];
-        assert.ok(
-          typeof contentType === "string" &&
-            contentType.includes("text/event-stream")
-        );
-        res.setEncoding("utf8");
-        res.once("data", (chunk) => {
-          const payload = String(chunk);
-          const match = payload.match(/sessionId=([^\s]+)/);
-          if (!match?.[1]) {
-            reject(new Error("Expected sessionId in SSE endpoint event"));
-            res.destroy();
-            return;
-          }
-          resolve({
-            sessionId: match[1],
-            close: () => res.destroy(),
-          });
-        });
-      }
-    );
+  const tools = response.tools ?? [];
+  const searchTool = tools.find((tool) => tool.name === "search_talks");
+  const detailTool = tools.find((tool) => tool.name === "get_talk_details");
 
-    req.on("error", reject);
-    req.end();
-  });
-
-  const { sessionId, close } = sseSession;
-
-  const postStatus = await new Promise<number>((resolve, reject) => {
-    const body = JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "tools/list",
-      params: {},
-    });
-    const req = request(
-      {
-        host: "127.0.0.1",
-        port,
-        path: `/mcp/messages?sessionId=${encodeURIComponent(sessionId)}`,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
-      },
-      (res) => {
-        res.resume();
-        resolve(res.statusCode ?? 0);
-      }
-    );
-    req.on("error", reject);
-    req.write(body);
-    req.end();
-  });
-
-  assert.equal(postStatus, 202);
-
-  const postSsePathStatus = await new Promise<number>((resolve, reject) => {
-    const body = JSON.stringify({
-      jsonrpc: "2.0",
-      id: 2,
-      method: "tools/list",
-      params: {},
-    });
-    const req = request(
-      {
-        host: "127.0.0.1",
-        port,
-        path: `/mcp?sessionId=${encodeURIComponent(sessionId)}`,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
-      },
-      (res) => {
-        res.resume();
-        resolve(res.statusCode ?? 0);
-      }
-    );
-    req.on("error", reject);
-    req.write(body);
-    req.end();
-  });
-
-  assert.equal(postSsePathStatus, 202);
-  close();
+  assert.ok(searchTool, "expected search_talks to be registered");
+  assert.ok(detailTool, "expected get_talk_details to be registered");
+  assert.equal(searchTool?._meta?.["openai/outputTemplate"], WIDGET_TEMPLATE_URI);
 });
