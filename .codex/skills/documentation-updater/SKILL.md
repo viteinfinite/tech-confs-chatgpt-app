@@ -12,4 +12,4 @@ metadata:
     files: {}
     hash: sha256-f9d608f205299e3b42dcd9925f28e15cbf015ce8bf0461358452f4b3d375e155
 ---
-@.agents-common/skills/documentation-updater/SKILL.md
+@../../../.agents-common/skills/documentation-updater/SKILL.md

@@ -7,4 +7,4 @@ description: >-
   information from web pages.
 allowed-tools: 'Bash(agent-browser:*)'
 ---
-@.agents-common/skills/agent-browser/SKILL.md
+@../../../.agents-common/skills/agent-browser/SKILL.md

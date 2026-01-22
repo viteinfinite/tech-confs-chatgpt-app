@@ -12,4 +12,4 @@ metadata:
     files: {}
     hash: sha256-e41a30e1a79737a14305e71b3ed7824aec7dcce3620fb812d2cddc9db23ee804
 ---
-@.agents-common/skills/commit-style-enforcer/SKILL.md
+@../../../.agents-common/skills/commit-style-enforcer/SKILL.md
