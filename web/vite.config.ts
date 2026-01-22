@@ -1,17 +1,33 @@
-import { createRequire } from "node:module";
+import path from "node:path";
 
 import react from "@vitejs/plugin-react";
+import { globSync } from "glob";
 import { defineConfig } from "vite";
-import { skybridge } from "skybridge/web";
 
-const require = createRequire(import.meta.url);
-const fs = require("node:fs") as { globSync?: (pattern: string) => string[] };
+const flatWidgetPattern = "src/widgets/*.{js,ts,jsx,tsx,html}";
+const dirWidgetPattern = "src/widgets/*/index.tsx";
 
-if (!fs.globSync) {
-  const { globSync } = require("glob") as { globSync: (pattern: string) => string[] };
-  fs.globSync = globSync;
-}
+const flatWidgets = globSync(flatWidgetPattern, { nodir: true }).map((file) => [
+  path.basename(file, path.extname(file)),
+  path.resolve(file),
+]);
+
+const dirWidgets = globSync(dirWidgetPattern, { nodir: true }).map((file) => [
+  path.basename(path.dirname(file)),
+  path.resolve(file),
+]);
+
+const widgetInputs = Object.fromEntries([...flatWidgets, ...dirWidgets]);
 
 export default defineConfig({
-  plugins: [skybridge(), react()],
+  plugins: [react()],
+  base: "/assets",
+  build: {
+    manifest: true,
+    minify: true,
+    cssCodeSplit: false,
+    rollupOptions: {
+      input: widgetInputs,
+    },
+  },
 });
