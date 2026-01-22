@@ -104,6 +104,7 @@ Notes on caching:
 
 - MCP endpoint: `POST /mcp`
 - Alias endpoint: `POST /sse` (routes to MCP)
+- Legacy health check: `GET /sse` (returns 200)
 
 ## MCP Tools
 
