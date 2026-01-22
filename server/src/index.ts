@@ -10,6 +10,12 @@ export async function createApp(): Promise<Express> {
   const app = express();
 
   app.use(express.json());
+  app.get("/sse", (_req, res) => {
+    res.status(200).send("ok");
+  });
+  app.head("/sse", (_req, res) => {
+    res.status(200).end();
+  });
   app.use(mcp(server));
 
   if (process.env.NODE_ENV !== "production") {

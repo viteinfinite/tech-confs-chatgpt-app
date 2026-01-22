@@ -6,6 +6,7 @@
 - [x] 1.5 Align the web build with Skybridge Vite widget entries and manifest output.
 - [x] 1.6 Add the `search_talks` widget entry to mount the schedule UI.
 - [x] 1.7 Add an Express wrapper that serves `/mcp` using Streamable HTTP transport.
+- [x] 1.8 Add a lightweight `/sse` health check endpoint for legacy probes.
 
 ## 2. Validation
 - [x] 2.1 Add/update tests to cover the Skybridge server tools.

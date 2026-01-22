@@ -89,3 +89,35 @@ test("POST /mcp handles tools/list", async (t) => {
   const toolNames = parsed.result?.tools?.map((tool) => tool.name) ?? [];
   assert.ok(toolNames.includes("search_talks"));
 });
+
+test("GET /sse responds with 200", async (t) => {
+  const originalEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  const app = await createApp();
+  const port = await listen(app, t);
+
+  const status = await new Promise<number>((resolve, reject) => {
+    const req = request(
+      {
+        host: "127.0.0.1",
+        port,
+        path: "/sse",
+        method: "GET",
+      },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode ?? 0);
+      }
+    );
+    req.on("error", reject);
+    req.end();
+  });
+
+  assert.equal(status, 200);
+
+  if (originalEnv === undefined) {
+    delete process.env.NODE_ENV;
+  } else {
+    process.env.NODE_ENV = originalEnv;
+  }
+});
