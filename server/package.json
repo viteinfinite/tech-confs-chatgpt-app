@@ -20,7 +20,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4"
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "skybridge": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

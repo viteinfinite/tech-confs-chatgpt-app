@@ -3,18 +3,23 @@
   "version": "1.0.0",
   "description": "ChatGPT app for browsing conference talks with a card-based interface",
   "private": true,
+  "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "build": "npm run build:server && npm run build:web && ls web/dist/",
+    "build": "pnpm build:web && rm -rf server/dist && pnpm --filter=conference-schedule-server --prod deploy server/dist && cp -r web/dist server/dist/assets && pnpm --filter=conference-schedule-server build",
     "build:server": "cd server && npm run build",
-    "build:web": "cd web && npm run build",
+    "build:web": "pnpm --filter=conference-schedule-web build",
     "dev": "npm run dev:server & npm run dev:web",
     "dev:server": "cd server && npm run dev",
     "dev:mcp": "cd server && npm run dev:server",
     "dev:web": "cd web && npm run dev",
     "preview": "cd preview && npm run dev",
-    "start": "cd server && npm start",
+    "start": "pnpm server:start",
     "test": "npm run test:server",
-    "test:server": "cd server && npm test"
+    "test:server": "cd server && npm test",
+    "server:start": "pnpm --filter=conference-schedule-server start",
+    "legacy:build": "npm run build:server && npm run build:web && ls web/dist/",
+    "legacy:start": "cd server && npm start",
+    "legacy:build:web": "cd web && npm run build"
   },
   "workspaces": [
     "server",
