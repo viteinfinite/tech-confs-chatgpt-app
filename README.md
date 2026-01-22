@@ -102,9 +102,8 @@ Notes on caching:
 
 ## MCP Server Transport
 
-- MCP endpoint: `POST /mcp`
-- Alias endpoint: `POST /sse` (routes to MCP)
-- Legacy health check: `GET /sse` (returns 200)
+- Streamable HTTP: `POST /mcp`
+- Legacy SSE: `GET /sse` with `Accept: text/event-stream` to open the stream, `POST /sse?sessionId=...` to send messages (GET without the header returns 204)
 
 ## MCP Tools
 

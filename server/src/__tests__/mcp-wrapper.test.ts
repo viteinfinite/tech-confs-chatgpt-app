@@ -90,56 +90,47 @@ test("POST /mcp handles tools/list", async (t) => {
   assert.ok(toolNames.includes("search_talks"));
 });
 
-test("POST /sse aliases to MCP", async (t) => {
+test("GET /sse opens SSE stream", async (t) => {
   const originalEnv = process.env.NODE_ENV;
   process.env.NODE_ENV = "production";
   const app = await createApp();
   const port = await listen(app, t);
 
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: 2,
-    method: "tools/list",
-    params: {},
-  });
-
-  const response = await new Promise<{ status: number; body: string }>((resolve, reject) => {
+  const sessionId = await new Promise<string>((resolve, reject) => {
     const req = request(
       {
         host: "127.0.0.1",
         port,
         path: "/sse",
-        method: "POST",
-        headers: {
-          Accept: "application/json, text/event-stream",
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
+        method: "GET",
+        headers: { Accept: "text/event-stream" },
       },
       (res) => {
-        let data = "";
+        assert.equal(res.statusCode, 200);
+        const contentType = res.headers["content-type"];
+        assert.ok(
+          typeof contentType === "string" &&
+            contentType.includes("text/event-stream")
+        );
         res.setEncoding("utf8");
-        res.on("data", (chunk) => {
-          data += chunk;
+        res.once("data", (chunk) => {
+          const payload = String(chunk);
+          const match = payload.match(/sessionId=([^\s]+)/);
+          if (!match?.[1]) {
+            reject(new Error("Expected sessionId in SSE endpoint event"));
+            res.destroy();
+            return;
+          }
+          resolve(match[1]);
+          res.destroy();
         });
-        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: data }));
       }
     );
     req.on("error", reject);
-    req.write(body);
     req.end();
   });
 
-  assert.equal(response.status, 200);
-  const trimmed = response.body.trim();
-  const dataLine = trimmed
-    .split("\n")
-    .find((line) => line.startsWith("data: "));
-  assert.ok(dataLine, "expected SSE data line");
-  const jsonPayload = dataLine.slice("data: ".length);
-  const parsed = JSON.parse(jsonPayload) as { result?: { tools?: Array<{ name: string }> } };
-  const toolNames = parsed.result?.tools?.map((tool) => tool.name) ?? [];
-  assert.ok(toolNames.includes("search_talks"));
+  assert.ok(sessionId);
 
   if (originalEnv === undefined) {
     delete process.env.NODE_ENV;
@@ -148,7 +139,7 @@ test("POST /sse aliases to MCP", async (t) => {
   }
 });
 
-test("GET /sse responds with 200", async (t) => {
+test("GET /sse without Accept returns 204", async (t) => {
   const originalEnv = process.env.NODE_ENV;
   process.env.NODE_ENV = "production";
   const app = await createApp();
@@ -171,7 +162,87 @@ test("GET /sse responds with 200", async (t) => {
     req.end();
   });
 
-  assert.equal(status, 200);
+  assert.equal(status, 204);
+
+  if (originalEnv === undefined) {
+    delete process.env.NODE_ENV;
+  } else {
+    process.env.NODE_ENV = originalEnv;
+  }
+});
+
+test("POST /sse handles tools/list", async (t) => {
+  const originalEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  const app = await createApp();
+  const port = await listen(app, t);
+
+  const { sessionId, stream } = await new Promise<{
+    sessionId: string;
+    stream: import("node:http").IncomingMessage;
+  }>((resolve, reject) => {
+    const req = request(
+      {
+        host: "127.0.0.1",
+        port,
+        path: "/sse",
+        method: "GET",
+        headers: { Accept: "text/event-stream" },
+      },
+      (res) => {
+        res.setEncoding("utf8");
+        res.once("data", (chunk) => {
+          const payload = String(chunk);
+          const match = payload.match(/sessionId=([^\s]+)/);
+          if (!match?.[1]) {
+            reject(new Error("Expected sessionId in SSE endpoint event"));
+            res.destroy();
+            return;
+          }
+          resolve({ sessionId: match[1], stream: res });
+        });
+      }
+    );
+    req.on("error", reject);
+    req.end();
+  });
+
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: 2,
+    method: "tools/list",
+    params: {},
+  });
+
+  const response = await new Promise<{ status: number; body: string }>((resolve, reject) => {
+    const req = request(
+      {
+        host: "127.0.0.1",
+        port,
+        path: `/sse?sessionId=${encodeURIComponent(sessionId)}`,
+        method: "POST",
+        headers: {
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: data }));
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+
+  assert.equal(response.status, 202);
+  stream.destroy();
 
   if (originalEnv === undefined) {
     delete process.env.NODE_ENV;
