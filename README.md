@@ -10,21 +10,21 @@ A ChatGPT app that presents an interactive, horizontally scrolling card-based in
 - **Talk detail retrieval** - Click cards to get full abstract via follow-up message
 - **Responsive design** - Adapts to ChatGPT display modes (inline/fullscreen)
 - **Accessibility support** - Proper ARIA labels, keyboard navigation
-- **Widget rendering** - MCP resources expose a widget template for ChatGPT UI rendering
+- **Widget rendering** - Skybridge widget templates render the schedule UI in ChatGPT
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌──────────────┐
-│   ChatGPT   │────▶│  MCP Server │────▶│  React UI    │
-│  (User Q)   │     │ (search.js) │     │  (iframe)    │
+│   ChatGPT   │────▶│ Skybridge   │────▶│  React UI    │
+│  (User Q)   │     │ MCP Server  │     │  (iframe)    │
 └─────────────┘     └─────────────┘     └──────────────┘
        │                    │
        ▼                    ▼
   Follow-up          schedule.json
        │
        ▼
-  Widget template (ui://widget/conference-schedule.html)
+  Widget template (ui://widgets/apps-sdk/search_talks.html)
   (for details)
 ```
 
@@ -77,17 +77,16 @@ npm run build
 # Watch mode (rebuilds on changes)
 npm run dev
 
-# Start the MCP server
-npm start
+# Start your MCP host/runtime (separate from this repo)
 ```
 
-The MCP server listens on `PORT` (default `2091`) and exposes Streamable HTTP endpoints under `/mcp`.
+The MCP server is exported as a Skybridge `McpServer` instance; your MCP host provides the transport.
 
 ## Dev Workflow
 
-1. Build the frontend bundle so `web/dist/component.js` is available (`npm run build`), or run `npm run dev` to watch and rebuild it.
-2. Start the MCP server (`npm start`) to serve `GET /mcp` (SSE) and `POST /mcp/messages`.
-3. For auto-restarts on server changes, run `npm run dev:mcp` in a separate terminal while `npm run dev` handles rebuilds.
+1. Build the frontend bundle (`npm run build`) or run `npm run dev` to watch and rebuild it.
+2. Build the server (`npm run build:server`) so the Skybridge module is up to date.
+3. Start your MCP host/runtime pointed at the built server module.
 
 Preview UI (development-only):
 ```bash
@@ -97,13 +96,12 @@ npm run preview
 - Autoreloads when preview source files change.
 
 Notes on caching:
-- The UI is served as a widget resource template (`ui://widget/conference-schedule.html`) backed by the bundled component.
-- ChatGPT/Inspector may cache connector metadata or tool responses; if changes don’t appear, refresh the connector or restart the MCP server.
+- The UI is served as a Skybridge widget template (`ui://widgets/apps-sdk/search_talks.html`).
+- ChatGPT/Inspector may cache connector metadata or tool responses; if changes don’t appear, refresh the connector or restart your MCP host.
 
-## MCP Server Endpoints
+## MCP Server Transport
 
-- SSE stream: `GET /mcp`
-- Message post endpoint: `POST /mcp/messages?sessionId=...`
+Transport endpoints are provided by your MCP host/runtime (e.g., Skybridge tooling), not by this repo.
 
 ## MCP Tools
 
@@ -134,7 +132,7 @@ Get detailed information about a specific talk including the full abstract.
 ## Usage Example
 
 1. Link the MCP server in ChatGPT developer mode
-2. Use the connector URL `http://localhost:2091/mcp` (or your deployed HTTPS URL)
+2. Use your MCP host's connector URL
 3. Ask: "Show me all talks about SwiftUI"
 4. ChatGPT calls `search_talks` with category filter
 5. React component displays horizontally scrolling cards
