@@ -90,30 +90,56 @@ test("POST /mcp handles tools/list", async (t) => {
   assert.ok(toolNames.includes("search_talks"));
 });
 
-test("GET /sse responds with 200", async (t) => {
+test("POST /sse aliases to MCP", async (t) => {
   const originalEnv = process.env.NODE_ENV;
   process.env.NODE_ENV = "production";
   const app = await createApp();
   const port = await listen(app, t);
 
-  const status = await new Promise<number>((resolve, reject) => {
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: 2,
+    method: "tools/list",
+    params: {},
+  });
+
+  const response = await new Promise<{ status: number; body: string }>((resolve, reject) => {
     const req = request(
       {
         host: "127.0.0.1",
         port,
         path: "/sse",
-        method: "GET",
+        method: "POST",
+        headers: {
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
       },
       (res) => {
-        res.resume();
-        resolve(res.statusCode ?? 0);
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: data }));
       }
     );
     req.on("error", reject);
+    req.write(body);
     req.end();
   });
 
-  assert.equal(status, 200);
+  assert.equal(response.status, 200);
+  const trimmed = response.body.trim();
+  const dataLine = trimmed
+    .split("\n")
+    .find((line) => line.startsWith("data: "));
+  assert.ok(dataLine, "expected SSE data line");
+  const jsonPayload = dataLine.slice("data: ".length);
+  const parsed = JSON.parse(jsonPayload) as { result?: { tools?: Array<{ name: string }> } };
+  const toolNames = parsed.result?.tools?.map((tool) => tool.name) ?? [];
+  assert.ok(toolNames.includes("search_talks"));
 
   if (originalEnv === undefined) {
     delete process.env.NODE_ENV;

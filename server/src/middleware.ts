@@ -5,7 +5,10 @@ import type { McpServer } from "skybridge/server";
 export const mcp =
   (server: McpServer) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    if (req.path !== "/mcp") {
+    const isMcpPath = req.path === "/mcp";
+    const isSseAlias = req.baseUrl === "/sse" && req.path === "/";
+
+    if (!isMcpPath && !isSseAlias) {
       return next();
     }
 

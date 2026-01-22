@@ -103,7 +103,7 @@ Notes on caching:
 ## MCP Server Transport
 
 - MCP endpoint: `POST /mcp`
-- Health check: `GET /sse` (returns 200)
+- Alias endpoint: `POST /sse` (routes to MCP)
 
 ## MCP Tools
 
