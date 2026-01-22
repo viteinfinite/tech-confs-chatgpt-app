@@ -13,6 +13,8 @@ The existing server relies on the MCP SDK with manual HTTP/SSE transport handlin
 ## Decisions
 - Decision: Replace `@modelcontextprotocol/sdk` server usage with `McpServer` + `registerWidget`/`registerTool`.
   - Why: Matches the requested server shape and reduces custom transport code.
+- Decision: Serve Streamable HTTP via an Express wrapper using `StreamableHTTPServerTransport`.
+  - Why: Keeps a local `/mcp` endpoint so the server can run directly without an external host.
 - Decision: Maintain widget HTML resource handling via the existing component bundle and template URI.
   - Why: Keeps the current UI integration unchanged.
 
@@ -21,5 +23,6 @@ The existing server relies on the MCP SDK with manual HTTP/SSE transport handlin
 
 ## Migration Plan
 1. Implement the `McpServer` version of the schedule server with equivalent tools and widget outputs.
-2. Ensure exports/types and startup behavior match Skybridge expectations.
-3. Update tests and build scripts as needed.
+2. Add an Express wrapper exposing `/mcp` with Streamable HTTP transport.
+3. Ensure exports/types and startup behavior match Skybridge expectations.
+4. Update tests and build scripts as needed.

@@ -5,6 +5,7 @@ The current server uses the MCP SDK with custom HTTP/SSE plumbing. Aligning to t
 
 ## What Changes
 - Replace the MCP SDK `Server` + manual HTTP/SSE setup with `McpServer` from `skybridge/server`.
+- Add an Express wrapper to serve Streamable HTTP at `/mcp` in development and production.
 - Register the schedule widget and tools via `registerWidget`/`registerTool` with the same domain behavior and outputs.
 - Preserve existing schedule data loading/filtering logic and widget HTML resource handling.
 - Update server exports/types to match the Skybridge server pattern.

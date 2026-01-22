@@ -5,8 +5,10 @@
 - [x] 1.4 Update server exports/types to align with the Skybridge server pattern.
 - [x] 1.5 Align the web build with Skybridge Vite widget entries and manifest output.
 - [x] 1.6 Add the `search_talks` widget entry to mount the schedule UI.
+- [x] 1.7 Add an Express wrapper that serves `/mcp` using Streamable HTTP transport.
 
 ## 2. Validation
 - [x] 2.1 Add/update tests to cover the Skybridge server tools.
-- [x] 2.2 Run `npm test`.
-- [x] 2.3 Run `npm run build`.
+- [x] 2.2 Add/update tests to cover the Express MCP wrapper.
+- [x] 2.3 Run `npm test`.
+- [x] 2.4 Run `npm run build`.
