@@ -4,8 +4,9 @@
   "description": "React component for conference schedule ChatGPT app",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/component.tsx --bundle --format=esm --outfile=dist/component.js --loader:.css=css --minify",
-    "dev": "esbuild src/component.tsx --bundle --format=esm --outfile=dist/component.js --loader:.css=css --watch"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "keywords": ["react", "chatgpt", "conference"],
   "author": "",
@@ -18,7 +19,8 @@
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "esbuild": "^0.24.0",
-    "typescript": "^5.7.2"
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.7.2",
+    "vite": "^7.1.11"
   }
 }

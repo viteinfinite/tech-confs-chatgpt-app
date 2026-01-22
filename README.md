@@ -84,7 +84,7 @@ The MCP server is exported as a Skybridge `McpServer` instance; your MCP host pr
 
 ## Dev Workflow
 
-1. Build the frontend bundle (`npm run build`) or run `npm run dev` to watch and rebuild it.
+1. Build the widget bundle with Vite (`npm run build`) or run `npm run dev` to watch and rebuild it.
 2. Build the server (`npm run build:server`) so the Skybridge module is up to date.
 3. Start your MCP host/runtime pointed at the built server module.
 
@@ -96,7 +96,7 @@ npm run preview
 - Autoreloads when preview source files change.
 
 Notes on caching:
-- The UI is served as a Skybridge widget template (`ui://widgets/apps-sdk/search_talks.html`).
+- The UI is served as a Skybridge widget template (`ui://widgets/apps-sdk/search_talks.html`) built from `web/src/widgets/search_talks.tsx`.
 - ChatGPT/Inspector may cache connector metadata or tool responses; if changes don’t appear, refresh the connector or restart your MCP host.
 
 ## MCP Server Transport
