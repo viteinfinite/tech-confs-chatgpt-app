@@ -12,7 +12,12 @@ import {
 test("schedule widget metadata links to the widget template", () => {
   const meta = getScheduleWidgetMeta();
 
-  assert.equal(meta["openai/outputTemplate"], WIDGET_TEMPLATE_URI);
+  const templateUri = meta["openai/outputTemplate"];
+  assert.equal(templateUri, WIDGET_TEMPLATE_URI);
+  assert.match(
+    String(templateUri),
+    /^ui:\/\/widgets\/apps-sdk\/search_talks(-[a-f0-9]{8})?\.html$/
+  );
   assert.equal(meta["openai/widgetAccessible"], true);
   assert.equal(meta["openai/resultCanProduceWidget"], true);
 });

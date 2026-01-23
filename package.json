@@ -5,7 +5,7 @@
   "private": true,
   "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "build": "pnpm build:web && rm -rf server/dist && pnpm --filter=conference-schedule-server --prod deploy server/dist && cp -r web/dist server/dist/assets && pnpm --filter=conference-schedule-server build",
+    "build": "pnpm build:web && rm -rf server/dist && pnpm --filter=conference-schedule-server --prod deploy server/dist && cp -r web/dist server/dist/assets && node scripts/generate-widget-template-hashes.mjs && pnpm --filter=conference-schedule-server build",
     "build:server": "cd server && npm run build",
     "build:web": "pnpm --filter=conference-schedule-web build",
     "dev": "npm run dev:server & npm run dev:web",

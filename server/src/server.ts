@@ -12,6 +12,13 @@ import {
   type Talk,
   type TalkFilters,
 } from "./schedule.js";
+import {
+  getWidgetTemplateHashEntry,
+  renderWidgetTemplate,
+  resolveServerUrl,
+  resolveWidgetAssets,
+  resolveWidgetTemplateUri,
+} from "./widget-template.js";
 
 /**
  * Tool output schema for search_talks
@@ -45,7 +52,7 @@ type WidgetDef = {
 };
 
 export const WIDGET_NAME = "search_talks";
-export const WIDGET_TEMPLATE_URI = `ui://widgets/apps-sdk/${WIDGET_NAME}.html`;
+export const WIDGET_TEMPLATE_URI = resolveWidgetTemplateUri(WIDGET_NAME);
 
 function widgetMeta(widget: WidgetDef) {
   return {
@@ -94,110 +101,131 @@ export function createScheduleServer() {
     }
   );
 
-  return server
-    .registerWidget(
-      WIDGET_NAME,
-      {
-        description: `${scheduleWidget.title} widget markup`,
-        _meta: {
-          "openai/widgetAccessible": true,
-          "openai/resultCanProduceWidget": true,
-        },
+  server.registerWidget(
+    WIDGET_NAME,
+    {
+      description: `${scheduleWidget.title} widget markup`,
+      _meta: {
+        "openai/widgetAccessible": true,
+        "openai/resultCanProduceWidget": true,
       },
-      {
-        title: "Search talks",
-        description:
-          "Search and filter conference talks. Returns talks grouped by track with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
-        annotations: { readOnlyHint: true },
-        inputSchema: {
-          category: z
-            .enum([
-              "AI & Machine Learning",
-              "SwiftUI & Design",
-              "Concurrency & Performance",
-              "Testing",
-              "Platform & Tools",
-              "Live Activities & Widgets",
-              "Accessibility",
-              "Vision & Spatial",
-              "Cross-Platform",
-              "Voice & Speech",
-              "Error Handling",
-              "Analytics",
-              "General",
-            ])
-            .describe(
-              "Filter by category (e.g., 'AI & Machine Learning', 'SwiftUI & Design', 'Testing')"
-            )
-            .optional(),
-          day: z.string().describe("Filter by day (e.g., 'Oct 6', 'Oct 7')").optional(),
-          speaker: z
-            .string()
-            .describe("Filter by speaker name (partial match)")
-            .optional(),
-          keywords: z
-            .array(z.string())
-            .describe("Filter by keywords in title or speakers")
-            .optional(),
-          track: z
-            .enum(["Mobile Development", "ML/AI", "Data Engineering", "General"])
-            .describe("Filter by track")
-            .optional(),
-          tags: z
-            .array(z.string())
-            .describe("Filter by tags (match any)")
-            .optional(),
-        },
+    },
+    {
+      title: "Search talks",
+      description:
+        "Search and filter conference talks. Returns talks grouped by track with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
+      annotations: { readOnlyHint: true },
+      inputSchema: {
+        category: z
+          .enum([
+            "AI & Machine Learning",
+            "SwiftUI & Design",
+            "Concurrency & Performance",
+            "Testing",
+            "Platform & Tools",
+            "Live Activities & Widgets",
+            "Accessibility",
+            "Vision & Spatial",
+            "Cross-Platform",
+            "Voice & Speech",
+            "Error Handling",
+            "Analytics",
+            "General",
+          ])
+          .describe(
+            "Filter by category (e.g., 'AI & Machine Learning', 'SwiftUI & Design', 'Testing')"
+          )
+          .optional(),
+        day: z.string().describe("Filter by day (e.g., 'Oct 6', 'Oct 7')").optional(),
+        speaker: z
+          .string()
+          .describe("Filter by speaker name (partial match)")
+          .optional(),
+        keywords: z
+          .array(z.string())
+          .describe("Filter by keywords in title or speakers")
+          .optional(),
+        track: z
+          .enum(["Mobile Development", "ML/AI", "Data Engineering", "General"])
+          .describe("Filter by track")
+          .optional(),
+        tags: z
+          .array(z.string())
+          .describe("Filter by tags (match any)")
+          .optional(),
       },
-      async (args: SearchTalksInput) => {
-        try {
-          const { category, day, speaker, keywords, track, tags } = args;
-          const rawTalks = await loadSchedule();
-          const allTalks = transformTalks(rawTalks, false);
+    },
+    async (args: SearchTalksInput) => {
+      try {
+        const { category, day, speaker, keywords, track, tags } = args;
+        const rawTalks = await loadSchedule();
+        const allTalks = transformTalks(rawTalks, false);
 
-          const filters: TalkFilters = {
-            category,
-            day,
-            speaker,
-            keywords,
-            track,
-            tags,
-          };
+        const filters: TalkFilters = {
+          category,
+          day,
+          speaker,
+          keywords,
+          track,
+          tags,
+        };
 
-          const filteredTalks = filterTalks(allTalks, filters);
-          const groups = groupTalksByTrack(filteredTalks);
+        const filteredTalks = filterTalks(allTalks, filters);
+        const groups = groupTalksByTrack(filteredTalks);
 
-          const output: SearchTalksOutput = {
-            talks: filteredTalks,
-            groups,
-            totalCount: filteredTalks.length,
-            filterSummary: buildFilterSummary(filters, filteredTalks.length),
-          };
+        const output: SearchTalksOutput = {
+          talks: filteredTalks,
+          groups,
+          totalCount: filteredTalks.length,
+          filterSummary: buildFilterSummary(filters, filteredTalks.length),
+        };
 
-          return {
-            content: textContent(
-              `Found ${output.totalCount} talk${output.totalCount === 1 ? "" : "s"}`
-            ),
-            structuredContent: output,
-            _meta: widgetMeta(scheduleWidget),
-          };
-        } catch (error) {
-          return buildErrorResponse(error);
-        }
+        return {
+          content: textContent(
+            `Found ${output.totalCount} talk${output.totalCount === 1 ? "" : "s"}`
+          ),
+          structuredContent: output,
+          _meta: widgetMeta(scheduleWidget),
+        };
+      } catch (error) {
+        return buildErrorResponse(error);
       }
-    )
-    .registerTool(
-      "get_talk_details",
-      {
-        title: "Get talk details",
-        description:
-          "Get detailed information about a specific talk including the full abstract. Use this when users click on a talk card or request more details about a specific session.",
-        annotations: { readOnlyHint: true },
-        inputSchema: {
-          talk_id: z.string().describe("The unique ID of the talk"),
-        },
+    }
+  );
+
+  const hashedTemplate = getWidgetTemplateHashEntry(WIDGET_NAME);
+  if (hashedTemplate) {
+    const hashedTemplateUri = `ui://widgets/apps-sdk/${hashedTemplate.file}`;
+    server.registerResource(
+      `${WIDGET_NAME}-template`,
+      hashedTemplateUri,
+      { description: `${scheduleWidget.title} widget markup (hashed)` },
+      async (uri, extra) => {
+        const { widgetFile, styleFile } = resolveWidgetAssets(WIDGET_NAME);
+        const serverUrl = resolveServerUrl(
+          extra as { requestInfo?: { headers?: Record<string, string | string[] | undefined> } }
+        );
+        const html = renderWidgetTemplate({ serverUrl, widgetFile, styleFile });
+
+        return {
+          contents: [{ uri: uri.href, mimeType: "text/html+skybridge", text: html }],
+        };
+      }
+    );
+  }
+
+  return server.registerTool(
+    "get_talk_details",
+    {
+      title: "Get talk details",
+      description:
+        "Get detailed information about a specific talk including the full abstract. Use this when users click on a talk card or request more details about a specific session.",
+      annotations: { readOnlyHint: true },
+      inputSchema: {
+        talk_id: z.string().describe("The unique ID of the talk"),
       },
-      async (args: TalkDetailsInput) => {
+    },
+    async (args: TalkDetailsInput) => {
         try {
           const { talk_id } = args;
           const rawTalks = await loadSchedule();
