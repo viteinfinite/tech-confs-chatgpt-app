@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/preview.js --loader:.css=css --alias:react=../node_modules/react --alias:react-dom=../node_modules/react-dom --servedir=. --serve=5173 --watch"
+    "dev": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/preview.js --loader:.css=css --alias:react=../node_modules/react --alias:react-dom=../node_modules/react-dom --servedir=. --serve=5173 --watch=forever"
   },
   "dependencies": {
     "react": "^18.3.1",
