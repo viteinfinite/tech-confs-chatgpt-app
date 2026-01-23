@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   App,
   TalkCard,
-  TopicRow,
+  TrackRow,
   ensureAppStyles,
   type Talk,
   type SearchTalksOutput,
@@ -156,6 +156,8 @@ const baseTalks: Talk[] = [
     day: "Day 1",
     kind: "Talk",
     category: "Engineering",
+    track: "ML/AI",
+    tags: ["MCP", "Clients", "Performance"],
   },
   {
     id: "talk-2",
@@ -165,6 +167,8 @@ const baseTalks: Talk[] = [
     day: "Day 1",
     kind: "Talk",
     category: "AI Ops",
+    track: "ML/AI",
+    tags: ["Ops", "Pipelines"],
   },
   {
     id: "talk-3",
@@ -174,6 +178,8 @@ const baseTalks: Talk[] = [
     day: "Day 1",
     kind: "Other",
     category: "Design",
+    track: "Mobile Development",
+    tags: ["UI", "Async", "UX"],
   },
   {
     id: "talk-4",
@@ -183,18 +189,20 @@ const baseTalks: Talk[] = [
     day: "Day 2",
     kind: "Talk",
     category: "Engineering",
+    track: "Data Engineering",
+    tags: ["TypeScript", "Team"],
   },
 ];
 
 const mockOutput: SearchTalksOutput = {
   talks: baseTalks,
   groups: baseTalks.reduce<Record<string, Talk[]>>((acc, talk) => {
-    acc[talk.category] = acc[talk.category] ?? [];
-    acc[talk.category].push(talk);
+    acc[talk.track] = acc[talk.track] ?? [];
+    acc[talk.track].push(talk);
     return acc;
   }, {}),
   totalCount: baseTalks.length,
-  filterSummary: "Showing 4 talks across Engineering, AI Ops, Design",
+  filterSummary: "Showing 4 talks across ML/AI, Mobile Development, Data Engineering",
 };
 
 function setOpenAiGlobals(globals: Partial<Window["openai"]>) {
@@ -254,10 +262,12 @@ function PreviewApp() {
         );
       case "topic-row":
         return (
-          <TopicRow
-            category="Engineering"
-            talks={baseTalks.filter((talk) => talk.category === "Engineering")}
-            onCardClick={() => {}}
+          <TrackRow
+            track="ML/AI"
+            talks={baseTalks.filter((talk) => talk.track === "ML/AI")}
+            onDetailClick={() => {}}
+            onFavToggle={() => {}}
+            favorites={new Set()}
           />
         );
       case "app":
@@ -281,7 +291,7 @@ function PreviewApp() {
           >
             <option value="app">App (Full Schedule)</option>
             <option value="talk-card">TalkCard</option>
-            <option value="topic-row">TopicRow</option>
+            <option value="topic-row">TrackRow</option>
           </select>
         </label>
       </header>
