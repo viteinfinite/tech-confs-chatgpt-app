@@ -95,6 +95,7 @@ npm run preview
 ```
 - Runs a local preview app at `http://127.0.0.1:5173` with component switching.
 - Autoreloads when preview source files change.
+- Talk cards show a labeled "Show details" action with a larger favorite toggle.
 
 Notes on caching:
 - The UI is served as a Skybridge widget template (`ui://widgets/apps-sdk/search_talks.html`) built from `web/src/widgets/search_talks.tsx`.

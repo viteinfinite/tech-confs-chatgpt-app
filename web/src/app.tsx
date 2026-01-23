@@ -172,14 +172,18 @@ body {
 }
 
 .action-btn {
-  background: none;
-  border: none;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid transparent;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
   transition: background 0.15s ease;
 }
 
@@ -188,8 +192,23 @@ body {
 }
 
 .action-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
+}
+
+.action-btn.detail-btn {
+  border-color: rgba(0,0,0,0.18);
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.action-btn.detail-btn span {
+  line-height: 1;
+}
+
+.action-btn.fav-btn {
+  width: 32px;
+  padding: 0;
 }
 
 .action-btn.detail-btn svg {
@@ -343,6 +362,14 @@ body {
   }
   .action-btn.detail-btn svg, .action-btn.fav-btn svg, .modal-close svg {
     stroke: rgba(255,255,255,0.5);
+  }
+  .action-btn.detail-btn {
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: #e2e8f0;
+  }
+  .action-btn.fav-btn {
+    background: rgba(255,255,255,0.04);
   }
   .modal-content {
     background: rgba(30,30,30,0.95);
@@ -498,12 +525,12 @@ export function TalkCard({
           <button
             className="action-btn detail-btn"
             onClick={() => onDetailClick(talk)}
-            aria-label="View details"
           >
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
+            <span>Show details</span>
           </button>
           <button
             className={`action-btn fav-btn ${isFav ? "active" : ""}`}
