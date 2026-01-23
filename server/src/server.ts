@@ -101,118 +101,114 @@ export function createScheduleServer() {
     }
   );
 
-  server.registerWidget(
-    WIDGET_NAME,
-    {
-      description: `${scheduleWidget.title} widget markup`,
-      _meta: {
-        "openai/widgetAccessible": true,
-        "openai/resultCanProduceWidget": true,
-      },
+  const widgetToolConfig = {
+    title: "Search talks",
+    description:
+      "Search and filter conference talks. Returns talks grouped by track with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      category: z
+        .enum([
+          "AI & Machine Learning",
+          "SwiftUI & Design",
+          "Concurrency & Performance",
+          "Testing",
+          "Platform & Tools",
+          "Live Activities & Widgets",
+          "Accessibility",
+          "Vision & Spatial",
+          "Cross-Platform",
+          "Voice & Speech",
+          "Error Handling",
+          "Analytics",
+          "General",
+        ])
+        .describe(
+          "Filter by category (e.g., 'AI & Machine Learning', 'SwiftUI & Design', 'Testing')"
+        )
+        .optional(),
+      day: z.string().describe("Filter by day (e.g., 'Oct 6', 'Oct 7')").optional(),
+      speaker: z.string().describe("Filter by speaker name (partial match)").optional(),
+      keywords: z
+        .array(z.string())
+        .describe("Filter by keywords in title or speakers")
+        .optional(),
+      track: z
+        .enum(["Mobile Development", "ML/AI", "Data Engineering", "General"])
+        .describe("Filter by track")
+        .optional(),
+      tags: z.array(z.string()).describe("Filter by tags (match any)").optional(),
     },
+    _meta: widgetMeta(scheduleWidget),
+  };
+
+  const hashedTemplate = getWidgetTemplateHashEntry(WIDGET_NAME);
+  const templateDescription = hashedTemplate
+    ? `${scheduleWidget.title} widget markup (hashed)`
+    : `${scheduleWidget.title} widget markup`;
+  const resourceMeta = {
+    "openai/widgetAccessible": true,
+    "openai/resultCanProduceWidget": true,
+    "openai/widgetDescription": widgetToolConfig.description,
+  };
+
+  server.registerResource(
+    `${WIDGET_NAME}-template`,
+    WIDGET_TEMPLATE_URI,
     {
-      title: "Search talks",
-      description:
-        "Search and filter conference talks. Returns talks grouped by track with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
-      annotations: { readOnlyHint: true },
-      inputSchema: {
-        category: z
-          .enum([
-            "AI & Machine Learning",
-            "SwiftUI & Design",
-            "Concurrency & Performance",
-            "Testing",
-            "Platform & Tools",
-            "Live Activities & Widgets",
-            "Accessibility",
-            "Vision & Spatial",
-            "Cross-Platform",
-            "Voice & Speech",
-            "Error Handling",
-            "Analytics",
-            "General",
-          ])
-          .describe(
-            "Filter by category (e.g., 'AI & Machine Learning', 'SwiftUI & Design', 'Testing')"
-          )
-          .optional(),
-        day: z.string().describe("Filter by day (e.g., 'Oct 6', 'Oct 7')").optional(),
-        speaker: z
-          .string()
-          .describe("Filter by speaker name (partial match)")
-          .optional(),
-        keywords: z
-          .array(z.string())
-          .describe("Filter by keywords in title or speakers")
-          .optional(),
-        track: z
-          .enum(["Mobile Development", "ML/AI", "Data Engineering", "General"])
-          .describe("Filter by track")
-          .optional(),
-        tags: z
-          .array(z.string())
-          .describe("Filter by tags (match any)")
-          .optional(),
-      },
+      description: templateDescription,
+      mimeType: "text/html+skybridge",
+      _meta: resourceMeta,
     },
-    async (args: SearchTalksInput) => {
-      try {
-        const { category, day, speaker, keywords, track, tags } = args;
-        const rawTalks = await loadSchedule();
-        const allTalks = transformTalks(rawTalks, false);
+    async (uri, extra) => {
+      const { widgetFile, styleFile } = resolveWidgetAssets(WIDGET_NAME);
+      const serverUrl = resolveServerUrl(
+        extra as { requestInfo?: { headers?: Record<string, string | string[] | undefined> } }
+      );
+      const html = renderWidgetTemplate({ serverUrl, widgetFile, styleFile });
 
-        const filters: TalkFilters = {
-          category,
-          day,
-          speaker,
-          keywords,
-          track,
-          tags,
-        };
-
-        const filteredTalks = filterTalks(allTalks, filters);
-        const groups = groupTalksByTrack(filteredTalks);
-
-        const output: SearchTalksOutput = {
-          talks: filteredTalks,
-          groups,
-          totalCount: filteredTalks.length,
-          filterSummary: buildFilterSummary(filters, filteredTalks.length),
-        };
-
-        return {
-          content: textContent(
-            `Found ${output.totalCount} talk${output.totalCount === 1 ? "" : "s"}`
-          ),
-          structuredContent: output,
-          _meta: widgetMeta(scheduleWidget),
-        };
-      } catch (error) {
-        return buildErrorResponse(error);
-      }
+      return {
+        contents: [{ uri: uri.href, mimeType: "text/html+skybridge", text: html }],
+      };
     }
   );
 
-  const hashedTemplate = getWidgetTemplateHashEntry(WIDGET_NAME);
-  if (hashedTemplate) {
-    const hashedTemplateUri = `ui://widgets/apps-sdk/${hashedTemplate.file}`;
-    server.registerResource(
-      `${WIDGET_NAME}-template`,
-      hashedTemplateUri,
-      { description: `${scheduleWidget.title} widget markup (hashed)` },
-      async (uri, extra) => {
-        const { widgetFile, styleFile } = resolveWidgetAssets(WIDGET_NAME);
-        const serverUrl = resolveServerUrl(
-          extra as { requestInfo?: { headers?: Record<string, string | string[] | undefined> } }
-        );
-        const html = renderWidgetTemplate({ serverUrl, widgetFile, styleFile });
+  server.registerTool(WIDGET_NAME, widgetToolConfig, async (args: SearchTalksInput) => {
+    try {
+      const { category, day, speaker, keywords, track, tags } = args;
+      const rawTalks = await loadSchedule();
+      const allTalks = transformTalks(rawTalks, false);
 
-        return {
-          contents: [{ uri: uri.href, mimeType: "text/html+skybridge", text: html }],
-        };
-      }
-    );
-  }
+      const filters: TalkFilters = {
+        category,
+        day,
+        speaker,
+        keywords,
+        track,
+        tags,
+      };
+
+      const filteredTalks = filterTalks(allTalks, filters);
+      const groups = groupTalksByTrack(filteredTalks);
+
+      const output: SearchTalksOutput = {
+        talks: filteredTalks,
+        groups,
+        totalCount: filteredTalks.length,
+        filterSummary: buildFilterSummary(filters, filteredTalks.length),
+      };
+
+      return {
+        content: textContent(
+          `Found ${output.totalCount} talk${output.totalCount === 1 ? "" : "s"}`
+        ),
+        structuredContent: output,
+        _meta: widgetMeta(scheduleWidget),
+      };
+    } catch (error) {
+      return buildErrorResponse(error);
+    }
+  });
 
   return server.registerTool(
     "get_talk_details",
