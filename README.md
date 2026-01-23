@@ -24,7 +24,7 @@ A ChatGPT app that presents an interactive, horizontally scrolling card-based in
   Follow-up          schedule.json
        │
        ▼
-  Widget template (ui://widgets/apps-sdk/search_talks.html)
+  Widget template (ui://widgets/apps-sdk/search_talks-<hash>.html)
   (for details)
 ```
 
@@ -98,7 +98,8 @@ npm run preview
 - Talk cards show a labeled "Show details" action with a larger favorite toggle.
 
 Notes on caching:
-- The UI is served as a Skybridge widget template (`ui://widgets/apps-sdk/search_talks.html`) built from `web/src/widgets/search_talks.tsx`.
+- The UI is served as a Skybridge widget template (`ui://widgets/apps-sdk/search_talks-<hash>.html`) built from `web/src/widgets/search_talks.tsx`.
+- Template hashes are generated at build time and stored in `server/dist/assets/widget-template-hashes.json`, with fallback to the unversioned template when the mapping file is missing.
 - ChatGPT/Inspector may cache connector metadata or tool responses; if changes don’t appear, refresh the connector or restart the MCP server.
 
 ## MCP Server Transport
