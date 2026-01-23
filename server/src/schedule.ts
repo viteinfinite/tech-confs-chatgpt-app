@@ -16,6 +16,8 @@ export interface RawTalk {
   toTime: string; // ISO timestamp
   kind: "Talk" | "Other";
   abstract: string | null;
+  track?: string;
+  tags?: string[];
 }
 
 /**
@@ -29,6 +31,8 @@ export interface Talk {
   day: string; // "Oct 6"
   kind: string;
   category: string;
+  track: string;
+  tags: string[];
   abstract?: string; // Only included in detail view
 }
 
@@ -78,6 +82,8 @@ export function transformTalks(rawTalks: RawTalk[], includeAbstract = false): Ta
     day: formatDay(raw.fromTime),
     kind: raw.kind,
     category: categorizeTalk(raw.title, raw.abstract),
+    track: raw.track || "General",
+    tags: raw.tags || [],
     ...(includeAbstract && raw.abstract ? { abstract: raw.abstract } : {}),
   }));
 }
@@ -90,6 +96,8 @@ export interface TalkFilters {
   day?: string;
   speaker?: string;
   keywords?: string[];
+  track?: string;
+  tags?: string[];
 }
 
 export function filterTalks(talks: Talk[], filters: TalkFilters): Talk[] {
@@ -109,6 +117,16 @@ export function filterTalks(talks: Talk[], filters: TalkFilters): Talk[] {
     if (filters.keywords && filters.keywords.length > 0) {
       const searchText = `${talk.title} ${talk.speakers}`.toLowerCase();
       if (!filters.keywords.some((kw) => searchText.includes(kw.toLowerCase()))) {
+        return false;
+      }
+    }
+
+    if (filters.track && talk.track !== filters.track) {
+      return false;
+    }
+
+    if (filters.tags && filters.tags.length > 0) {
+      if (!filters.tags.some((tag) => talk.tags.includes(tag))) {
         return false;
       }
     }
@@ -138,4 +156,41 @@ export function groupTalksByCategory(talks: Talk[]): Record<string, Talk[]> {
  */
 export function getTalkById(talks: Talk[], id: string): Talk | undefined {
   return talks.find((t) => t.id === id);
+}
+
+/**
+ * Group talks by track
+ */
+export function groupTalksByTrack(talks: Talk[]): Record<string, Talk[]> {
+  const groups: Record<string, Talk[]> = {};
+
+  for (const talk of talks) {
+    if (!groups[talk.track]) {
+      groups[talk.track] = [];
+    }
+    groups[talk.track].push(talk);
+  }
+
+  return groups;
+}
+
+/**
+ * Get all unique tracks from talks
+ */
+export function getAllTracks(talks: Talk[]): string[] {
+  const tracks = new Set(talks.map((t) => t.track));
+  return Array.from(tracks).sort();
+}
+
+/**
+ * Get all unique tags from talks
+ */
+export function getAllTags(talks: Talk[]): string[] {
+  const tags = new Set<string>();
+  for (const talk of talks) {
+    for (const tag of talk.tags) {
+      tags.add(tag);
+    }
+  }
+  return Array.from(tags).sort();
 }

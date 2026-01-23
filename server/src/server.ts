@@ -5,6 +5,9 @@ import {
   transformTalks,
   filterTalks,
   groupTalksByCategory,
+  groupTalksByTrack,
+  getAllTracks,
+  getAllTags,
   getTalkById,
   type Talk,
   type TalkFilters,
@@ -25,6 +28,8 @@ type SearchTalksInput = {
   day?: string;
   speaker?: string;
   keywords?: string[];
+  track?: string;
+  tags?: string[];
 };
 
 type TalkDetailsInput = {
@@ -102,7 +107,7 @@ export function createScheduleServer() {
       {
         title: "Search talks",
         description:
-          "Search and filter conference talks. Returns talks grouped by category with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
+          "Search and filter conference talks. Returns talks grouped by track with a card-based UI. Use this when users want to browse, filter, or discover conference sessions.",
         annotations: { readOnlyHint: true },
         inputSchema: {
           category: z
@@ -134,11 +139,19 @@ export function createScheduleServer() {
             .array(z.string())
             .describe("Filter by keywords in title or speakers")
             .optional(),
+          track: z
+            .enum(["Mobile Development", "ML/AI", "Data Engineering", "General"])
+            .describe("Filter by track")
+            .optional(),
+          tags: z
+            .array(z.string())
+            .describe("Filter by tags (match any)")
+            .optional(),
         },
       },
       async (args: SearchTalksInput) => {
         try {
-          const { category, day, speaker, keywords } = args;
+          const { category, day, speaker, keywords, track, tags } = args;
           const rawTalks = await loadSchedule();
           const allTalks = transformTalks(rawTalks, false);
 
@@ -147,10 +160,12 @@ export function createScheduleServer() {
             day,
             speaker,
             keywords,
+            track,
+            tags,
           };
 
           const filteredTalks = filterTalks(allTalks, filters);
-          const groups = groupTalksByCategory(filteredTalks);
+          const groups = groupTalksByTrack(filteredTalks);
 
           const output: SearchTalksOutput = {
             talks: filteredTalks,
@@ -225,6 +240,12 @@ function buildFilterSummary(filters: TalkFilters, count: number): string {
   }
   if (filters.keywords && filters.keywords.length > 0) {
     parts.push(`keywords "${filters.keywords.join(", ")}"`);
+  }
+  if (filters.track) {
+    parts.push(`track "${filters.track}"`);
+  }
+  if (filters.tags && filters.tags.length > 0) {
+    parts.push(`tags "${filters.tags.join(", ")}"`);
   }
 
   if (parts.length === 0) {
